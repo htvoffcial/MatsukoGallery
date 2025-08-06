@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>松高コン部フォト</title>
+</head>
+
+<body>
+    <div class="pc-top-nav">
+        <img src="/assets/001_matsukokonbphotologo.webp" alt="Logo" class="pc-top-nav-logo">
+        <div class="pc-top-nav-r">
+            <a href="">
+                <div class="plus-icon">
+                </div>
+            </a>
+            <div class="usericonbox">
+                <img src="/assets/001_matsukokonbphotologo.webp" alt="User Icon" class="usericon">
+                <span>ゲスト</span>
+            </div>
+        </div>
+    </div>
+    <div class="mainbox">
+        <div class="leftbox">
+            <a class="gallery selects1" href="?view=gallery" id="gallery">
+                ギャラリー
+            </a>
+            <a class="favorite" href="?view=favorite" id="favorite">
+                お気に入り
+            </a>
+        </div>
+        <div class="rightbox">
+            <a href="#">
+                <img src="/assets/001_matsukokonbphotologo.webp" alt="Gallery Image">
+            </a>
+        </div>
+    </div>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const galleryLink = document.getElementById('gallery');
+        const favoriteLink = document.getElementById('favorite');
+        const urlParams = new URLSearchParams(window.location.search);
+        const view = urlParams.get('view');
+        if (view === 'gallery') {
+            galleryLink.classList.add('selects1');
+            favoriteLink.classList.remove('selects1');
+        } else if (view === 'favorite') {
+            favoriteLink.classList.add('selects1');
+            galleryLink.classList.remove('selects1');
+        }
+    });
+</script>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+    }
+    .rightbox {
+        width: 80%;
+        height: 100%;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    .rightbox img {
+        width: 180px;
+        height: 120px;
+        object-fit: contain;
+        box-shadow: 0 2px 5px rgba(56, 56, 56, 0.05);
+    }
+    .selects1 {
+        background-color: ghostwhite;
+        border-radius: 80px;
+    }
+    
+    .leftbox {
+        width: 20%;
+        height: 100%;
+        /*background-color: #d8f3ff;*/
+        padding:10px;
+        padding-top:50px;
+    }
+    .leftbox a {
+        display: flex;
+        align-items: center;
+        gap:10px;
+        font-size:18px;
+        padding:10px 20px;
+        font-weight: 600;
+        color:#1e4f66;
+        margin-top: 5px;
+        text-decoration: none;
+    }
+    .gallery::before {
+        content: ' ';
+        display: block;
+        width: 19px;
+        height: 19px;
+        border-left: 2px solid #1e4f66;
+        border-right: 2px solid #1e4f66;
+        border-bottom: 4px solid #1e4f66;
+        border-top: 2px solid #1e4f66;
+        box-sizing: border-box;
+        border-radius: 4px;
+    }
+    .favorite::before {
+        content: ' ';
+        display: block;
+        width: 20px;
+        height: 20px;
+        /*Star shape*/
+        border: #1e4f66 10px solid;
+        clip-path: polygon(
+            50% 0%,
+            61.8% 35.1%,
+            98.0% 35.1%,
+            68.8% 57.0%,
+            79.4% 91.0%,
+            50% 70.0%,
+            20.6% 91.0%,
+            31.2% 57.0%,
+            2.0% 35.1%,
+            38.2% 35.1%
+        );
+        box-sizing: border-box;
+        border-radius: 4px;
+        
+    }
+    .pc-top-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 3px 5px rgba(116, 116, 116, 0.05);
+        z-index: 1000;
+
+    }
+
+    .pc-top-nav-logo {
+        display: block;
+        height: 25px;
+        width: auto;
+        margin-left: 20px;
+    }
+
+    .pc-top-nav-r {
+        margin-left: auto;
+        padding-right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .plus-icon {
+        position: relative;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .plus-icon::before {
+        content: '';
+        width: 16px;
+        height: 2px;
+        background-color: #333;
+        position: relative;
+        border-radius: 2px;
+    }
+
+    .plus-icon::after {
+        content: '';
+        width: 2px;
+        height: 16px;
+        background-color: #333;
+        position: absolute;
+        top: 0px;
+        left: 7px;
+        border-radius: 2px;
+    }
+
+    .usericonbox {
+        display: flex;
+        align-items: center;
+        margin-left: 20px;
+        border-radius: 80px;
+        padding: 5px;
+        box-shadow: 0 0px 5px rgba(56, 56, 56, 0.05);
+    }
+
+    .usericon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .usericonbox span {
+        margin-left: 10px;
+        margin-right: 10px;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .mainbox {
+        margin-top: 60px;
+        display: flex;
+        flex-direction: row;
+        background-color: #fdfdfd;
+        height: calc(100vh - 120px);
+        overflow:hidden; 
+    }
+
+    @media (max-width: 768px) {
+        .pc-top-nav {
+            height: 50px;
+        }
+
+        .pc-top-nav-logo {
+            height: 20px;
+        }
+
+        .usericonbox span {
+            display: none;
+        }
+
+        .mainbox {
+            flex-direction: column;
+        }
+    }
+</style>
+
+</html>
