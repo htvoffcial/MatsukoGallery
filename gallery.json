@@ -1,16 +1,25 @@
 [
- {
-  "path": "/images/3573_KOUSHA1.webp",
-  "tag": [
-    "屋外",
-    "校舎"
-  ]
-},
+  {
+    "path": "/images/3573_KOUSHA1.webp",
+    "tag": [
+      "屋外",
+      "校舎"
+    ]
+  },
   {
     "path": "/images/5897_CHURIN1.webp",
     "tag": [
       "屋外",
       "駐輪所"
+    ]
+  },
+  {
+    "path": "/images/4727_TENMONDAI1.webp",
+    "tag": [
+      "天体ドーム",
+      "屋外",
+      "渡り廊下",
+      "校舎"
     ]
   }
 ]
