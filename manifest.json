@@ -1,0 +1,23 @@
+{
+  "name": "松高コン部フォト",
+  "short_name": "松高フォト",
+  "start_url": "/?view=gallery",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e4f66",
+  "orientation": "portrait",
+  "scope": "/",
+  "description": "千葉県立松戸高等学校コンピューター部が撮影した写真のギャラリーです。",
+  "icons": [
+    {
+      "src": "/assets/004_matsukokonbuphotologoicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/004_matsukokonbuphotologoicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
