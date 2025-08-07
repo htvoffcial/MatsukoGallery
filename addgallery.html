@@ -2,67 +2,201 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>画像アップロードとWebP変換</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: sans-serif; padding: 1em; }
-    input, button, textarea { margin: 5px 0; display: block; width: 100%; }
-    #tagDisplay span { display: inline-block; padding: 4px 8px; background: #eef; margin: 2px; border-radius: 4px; }
-    #downloadLink { margin-top: 10px; display: none; }
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600&display=swap');
+    body { font-family: 'Noto Sans JP', sans-serif; }
+    .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .glass-effect { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.1); }
+    .tag-item { transition: all 0.2s ease; }
+    .tag-item:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .upload-area { transition: all 0.3s ease; }
+    .upload-area:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+    .progress-bar { transition: width 0.3s ease; }
   </style>
 </head>
-<body>
+<body class="gradient-bg min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-2xl">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-white mb-2">📸 WebP変換ツール</h1>
+      <p class="text-white/80">画像を高品質なWebP形式に変換（1MB以下）</p>
+    </div>
 
-  <h2>画像アップロードとWebP変換（1MB以下）</h2>
+    <!-- Main Card -->
+    <div class="glass-effect rounded-2xl p-8 shadow-2xl border border-white/20">
+      
+      <!-- Image Upload Section -->
+      <div class="mb-6">
+        <label class="block text-white font-medium mb-3">📁 画像を選択</label>
+        <div class="upload-area bg-white/10 border-2 border-dashed border-white/30 rounded-xl p-6 text-center cursor-pointer hover:border-white/50">
+          <input type="file" id="imageInput" accept="image/*" class="hidden">
+          <div id="uploadText" class="text-white/80">
+            <div class="text-4xl mb-2">⬆️</div>
+            <p>クリックして画像を選択</p>
+            <p class="text-sm mt-1">JPG, PNG, GIF対応</p>
+          </div>
+          <div id="imagePreview" class="hidden">
+            <img id="previewImg" class="max-w-full max-h-48 mx-auto rounded-lg shadow-lg">
+            <p id="fileName" class="text-white mt-2 font-medium"></p>
+          </div>
+        </div>
+      </div>
 
-  <label>画像を選択：
-    <input type="file" id="imageInput" accept="image/*">
-  </label>
+      <!-- Filename Input -->
+      <div class="mb-6">
+        <label class="block text-white font-medium mb-3">✏️ ファイル名（英語のみ、大文字、10文字以内）</label>
+        <input type="text" id="filenameInput" maxlength="10" 
+               class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50"
+               placeholder="例: SUNSET-VIEW">
+        <p class="text-white/60 text-sm mt-1">大文字英数字とハイフンのみ使用可能</p>
+      </div>
 
-  <label>ファイル名（英語のみ、小文字禁止、10文字以内）：
-    <input type="text" id="filenameInput" maxlength="10">
-  </label>
+      <!-- Tags Section -->
+      <div class="mb-6">
+        <label class="block text-white font-medium mb-3">🏷️ タグ入力（Enterで追加）</label>
+        <input type="text" id="tagInput" list="tagSuggestions"
+               class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/50"
+               placeholder="タグを入力してEnterキー">
+        <datalist id="tagSuggestions">
+          <option value="展望台">
+          <option value="自然">
+          <option value="建築物">
+          <option value="空">
+          <option value="都市">
+          <option value="山">
+          <option value="海">
+          <option value="夕日">
+          <option value="夜景">
+          <option value="桜">
+        </datalist>
+        
+        <!-- Tags Display -->
+        <div id="tagDisplay" class="mt-3 flex flex-wrap gap-2"></div>
+      </div>
 
-  <label>タグ入力（Enterで追加）：
-    <input type="text" id="tagInput" list="tagSuggestions">
-    <datalist id="tagSuggestions">
-      <option value="展望台">
-      <option value="自然">
-      <option value="建築物">
-      <option value="空">
-      <option value="都市">
-      <option value="山">
-    </datalist>
-  </label>
+      <!-- Convert Button -->
+      <button id="convertButton" 
+              class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-4 px-6 rounded-xl hover:from-purple-600 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+        🔄 WebP変換＆ダウンロードリンク生成
+      </button>
 
-  <div id="tagDisplay"></div>
+      <!-- Progress Bar -->
+      <div id="progressContainer" class="hidden mt-4">
+        <div class="bg-white/20 rounded-full h-2">
+          <div id="progressBar" class="progress-bar bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full" style="width: 0%"></div>
+        </div>
+        <p id="progressText" class="text-white/80 text-sm mt-2 text-center">変換中...</p>
+      </div>
 
-  <button id="convertButton">WebP変換＆ダウンロードリンク生成</button>
+      <!-- Download Link -->
+      <div id="downloadSection" class="hidden mt-6 p-4 bg-green-500/20 rounded-xl border border-green-400/30">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-white font-medium">✅ 変換完了！</p>
+            <p class="text-white/80 text-sm">ファイルサイズ: <span id="fileSize"></span></p>
+          </div>
+          <a id="downloadLink" download 
+             class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200">
+            📥 ダウンロード
+          </a>
+        </div>
+      </div>
 
-  <a id="downloadLink" download>→ ダウンロードリンク</a>
-
-  <textarea id="outputJson" rows="8" readonly></textarea>
+      <!-- JSON Output -->
+      <div class="mt-6">
+        <label class="block text-white font-medium mb-3">📋 JSON出力</label>
+        <textarea id="outputJson" rows="8" readonly
+                  class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 font-mono text-sm resize-none"
+                  placeholder="変換後のJSON情報がここに表示されます"></textarea>
+      </div>
+    </div>
+  </div>
 
   <script>
     const tagInput = document.getElementById("tagInput");
     const tagDisplay = document.getElementById("tagDisplay");
+    const imageInput = document.getElementById("imageInput");
+    const uploadArea = document.querySelector(".upload-area");
+    const uploadText = document.getElementById("uploadText");
+    const imagePreview = document.getElementById("imagePreview");
+    const previewImg = document.getElementById("previewImg");
+    const fileName = document.getElementById("fileName");
+    const convertButton = document.getElementById("convertButton");
+    const progressContainer = document.getElementById("progressContainer");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    const downloadSection = document.getElementById("downloadSection");
+    const downloadLink = document.getElementById("downloadLink");
+    const fileSize = document.getElementById("fileSize");
+    const outputJson = document.getElementById("outputJson");
+    
     const tags = new Set();
+    let existingPaths = [];
 
-    tagInput.addEventListener("keydown", e => {
+    // Upload area click handler
+    uploadArea.addEventListener("click", () => imageInput.click());
+
+    // Drag and drop functionality
+    uploadArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = "rgba(255,255,255,0.7)";
+    });
+
+    uploadArea.addEventListener("dragleave", () => {
+      uploadArea.style.borderColor = "rgba(255,255,255,0.3)";
+    });
+
+    uploadArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = "rgba(255,255,255,0.3)";
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        imageInput.files = files;
+        handleImageSelect();
+      }
+    });
+
+    // Image selection handler
+    imageInput.addEventListener("change", handleImageSelect);
+
+    function handleImageSelect() {
+      const file = imageInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewImg.src = e.target.result;
+          fileName.textContent = file.name;
+          uploadText.classList.add("hidden");
+          imagePreview.classList.remove("hidden");
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Tag input handler
+    tagInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         const tag = tagInput.value.trim();
         if (tag && !tags.has(tag)) {
           tags.add(tag);
           const span = document.createElement("span");
+          span.className = "tag-item inline-block px-3 py-1 bg-white/20 text-white rounded-full text-sm border border-white/30 cursor-pointer";
           span.textContent = tag;
+          span.onclick = () => {
+            tags.delete(tag);
+            span.remove();
+          };
           tagDisplay.appendChild(span);
         }
         tagInput.value = "";
       }
     });
 
-    let existingPaths = [];
-
+    // Fetch existing gallery data
     async function fetchGalleryJson() {
       try {
         const res = await fetch("gallery.json");
@@ -77,67 +211,122 @@
 
     fetchGalleryJson();
 
-    document.getElementById("convertButton").addEventListener("click", async () => {
-      const file = document.getElementById("imageInput").files[0];
+    // Convert button handler
+    convertButton.addEventListener("click", async () => {
+      const file = imageInput.files[0];
       const filename = document.getElementById("filenameInput").value.trim();
-      const downloadLink = document.getElementById("downloadLink");
-      const outputJson = document.getElementById("outputJson");
 
-      if (!file || !filename || tags.size === 0) {
-        alert("全項目を入力してください");
+      // Validation
+      if (!file) {
+        alert("画像を選択してください");
         return;
       }
-
+      if (!filename) {
+        alert("ファイル名を入力してください");
+        return;
+      }
+      if (tags.size === 0) {
+        alert("少なくとも1つのタグを追加してください");
+        return;
+      }
       if (!/^[A-Z0-9-]+$/.test(filename)) {
         alert("ファイル名は大文字英数字とハイフンのみです");
         return;
       }
 
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      await img.decode();
+      // Show progress
+      convertButton.disabled = true;
+      progressContainer.classList.remove("hidden");
+      downloadSection.classList.add("hidden");
+      
+      try {
+        // Progress simulation
+        for (let i = 0; i <= 30; i += 10) {
+          progressBar.style.width = i + "%";
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
 
-      // Resize: 最大幅1024pxに調整
-      const MAX_WIDTH = 1024;
-      const scale = Math.min(1, MAX_WIDTH / img.width);
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        await img.decode();
 
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        progressBar.style.width = "50%";
+        progressText.textContent = "画像を処理中...";
 
-      // WebPエンコード
-      let quality = 0.95;
-      let blob;
-      do {
-        blob = await new Promise(res => canvas.toBlob(res, "image/webp", quality));
-        quality -= 0.05;
-      } while (blob.size > 1024 * 1024 && quality > 0.5); // 1MB以下目標
+        // Resize: 最大幅1024pxに調整
+        const MAX_WIDTH = 1024;
+        const scale = Math.min(1, MAX_WIDTH / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
 
-      // 重複しないID生成
-      let newId;
-      do {
-        newId = Math.floor(1000 + Math.random() * 9000).toString();
-      } while (existingPaths.includes(newId));
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      const newPath = `/images/${newId}_${filename}.webp`;
+        progressBar.style.width = "70%";
+        progressText.textContent = "WebPに変換中...";
 
-      // ダウンロードリンク生成
-      const blobUrl = URL.createObjectURL(blob);
-      downloadLink.href = blobUrl;
-      downloadLink.download = `${newId}_${filename}.webp`;
-      downloadLink.style.display = "inline";
-      downloadLink.textContent = `→ ${newId}_${filename}.webp をダウンロード`;
+        // WebPエンコード
+        let quality = 0.95;
+        let blob;
+        do {
+          blob = await new Promise(res => canvas.toBlob(res, "image/webp", quality));
+          quality -= 0.05;
+        } while (blob.size > 1024 * 1024 && quality > 0.5);
 
-      // JSON構造出力
-      const newEntry = {
-        path: newPath,
-        tag: [...tags]
-      };
-      outputJson.value = JSON.stringify(newEntry, null, 2);
+        progressBar.style.width = "90%";
+        progressText.textContent = "ファイルを準備中...";
+
+        // 重複しないID生成
+        let newId;
+        do {
+          newId = Math.floor(1000 + Math.random() * 9000).toString();
+        } while (existingPaths.includes(newId));
+
+        const newPath = `/images/${newId}_${filename}.webp`;
+
+        // ダウンロードリンク生成
+        const blobUrl = URL.createObjectURL(blob);
+        downloadLink.href = blobUrl;
+        downloadLink.download = `${newId}_${filename}.webp`;
+        
+        // ファイルサイズ表示
+        const sizeInKB = (blob.size / 1024).toFixed(1);
+        fileSize.textContent = `${sizeInKB} KB`;
+
+        // JSON構造出力
+        const newEntry = {
+          path: newPath,
+          filename: `${newId}_${filename}.webp`,
+          tags: Array.from(tags),
+          size: `${sizeInKB} KB`,
+          dimensions: `${canvas.width}x${canvas.height}`,
+          created: new Date().toISOString()
+        };
+
+        outputJson.value = JSON.stringify(newEntry, null, 2);
+
+        // Complete progress
+        progressBar.style.width = "100%";
+        progressText.textContent = "完了！";
+        
+        setTimeout(() => {
+          progressContainer.classList.add("hidden");
+          downloadSection.classList.remove("hidden");
+        }, 500);
+
+      } catch (error) {
+        alert("変換中にエラーが発生しました: " + error.message);
+        progressContainer.classList.add("hidden");
+      } finally {
+        convertButton.disabled = false;
+      }
+    });
+
+    // Filename input validation
+    document.getElementById("filenameInput").addEventListener("input", (e) => {
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
     });
   </script>
-
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96b63785a7a15ebc',t:'MTc1NDU2Mzg2Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
