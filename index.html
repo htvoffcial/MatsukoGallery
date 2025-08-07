@@ -37,6 +37,9 @@
                 <div class="plus-icon">
                 </div>
             </a>
+            <a href="https://sites.google.com/view/mtdchelp/activity/photos" style="text-decoration:none;">
+                <div class="helpicon">?</div>
+            </a>
             <div class="usericonbox">
                 <img src="/images/3573_KOUSHA1.webp" alt="User Icon" class="usericon">
                 <span>ゲスト</span>
@@ -62,7 +65,7 @@
     </div>
 </body>
 <script>
-    function mtal(){
+    function mtal() {
         location.href = "mtalsignin.html";
     }
     async function loadGallery() {
@@ -139,6 +142,18 @@
         overflow: hidden;
     }
 
+    .helpicon {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border: solid #333;
+        border-radius: 50%;
+        text-decoration: none;
+        font-weight: 600;
+    }
 
     .rightbox {
         width: 80%;
@@ -316,30 +331,34 @@
         .usericonbox span {
             display: none;
         }
+
         .leftbox {
-            position:fixed;
-            bottom:0;
+            position: fixed;
+            bottom: 0;
             width: 100%;
             display: flex;
             flex-direction: row;
-            gap:5px;
+            gap: 5px;
             width: calc(100% - 30px);
             height: auto;
             padding: 10px;
         }
+
         .leftbox a {
             flex: 1;
             text-align: center;
-            width:50%;
+            width: 50%;
         }
+
         .rightbox {
             width: 100%;
             height: calc(100vh - 50px);
             padding: 10px;
         }
+
         .mainbox {
             flex-direction: column;
-            height:calc(100vh - 160px);
+            height: calc(100vh - 160px);
         }
     }
 </style>
