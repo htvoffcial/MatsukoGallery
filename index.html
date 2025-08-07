@@ -11,12 +11,12 @@
     <div class="pc-top-nav">
         <img src="/assets/001_matsukokonbphotologo.webp" alt="Logo" class="pc-top-nav-logo">
         <div class="pc-top-nav-r">
-            <a href="">
+            <a href="javascript:mtal()">
                 <div class="plus-icon">
                 </div>
             </a>
             <div class="usericonbox">
-                <img src="/assets/001_matsukokonbphotologo.webp" alt="User Icon" class="usericon">
+                <img src="/images/3573_KOUSHA1.webp" alt="User Icon" class="usericon">
                 <span>ゲスト</span>
             </div>
         </div>
@@ -30,27 +30,85 @@
                 お気に入り
             </a>
         </div>
-        <div class="rightbox">
+        <div class="rightbox" id="galleryContent">
+            <!--
             <a href="#">
                 <img src="/assets/001_matsukokonbphotologo.webp" alt="Gallery Image">
             </a>
+            -->
         </div>
     </div>
 </body>
 <script>
+    function mtal(){
+        location.href = "mtalsignin.html";
+    }
+    async function loadGallery() {
+        const galleryContent = document.getElementById('galleryContent');
+        galleryContent.innerHTML = ''; // 既存の内容をクリア
+        try {
+            const response = await fetch('/gallery.json');
+
+            const gallery = await response.json();
+            gallery.forEach(item => {
+                const img = document.createElement('img');
+                img.src = item.path;
+                img.alt = 'Gallery Image';
+                img.loading = 'lazy'; // 遅延読み込み
+                /*const favoritebuttoncover = document.createElement('div');
+                favoritebuttoncover.className = 'favoritebuttoncover';
+                */
+                const a = document.createElement('a');
+                a.href = "viewer.html?images=" + item.path.substring(item.path.lastIndexOf('/') + 1); // 画像のパスをリンクに設定
+                a.className = 'imagebox';
+                a.appendChild(img);
+                /*a.appendChild(favoritebuttoncover);*/
+                galleryContent.appendChild(a);
+
+            });
+        } catch (error) {
+            console.error('Error fetching gallery:', error);
+            galleryContent.innerHTML = '<p>ギャラリーの読み込みに失敗しました。</p>';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const galleryLink = document.getElementById('gallery');
         const favoriteLink = document.getElementById('favorite');
         const urlParams = new URLSearchParams(window.location.search);
         const view = urlParams.get('view');
-        if (view === 'gallery') {
+
+        const galleryContent = document.getElementById('galleryContent');
+        galleryContent.innerHTML = '';
+
+        if (view === 'gallery' || !view) {
+            // ギャラリー表示
+            loadGallery();
             galleryLink.classList.add('selects1');
             favoriteLink.classList.remove('selects1');
         } else if (view === 'favorite') {
+            // お気に入り表示
             favoriteLink.classList.add('selects1');
             galleryLink.classList.remove('selects1');
+
+            const favoritePaths = JSON.parse(localStorage.getItem('favorite') || '[]');
+            if (favoritePaths.length === 0) {
+                galleryContent.innerHTML = '<p>お気に入りはまだありません。</p>';
+            } else {
+                favoritePaths.forEach(path => {
+                    const img = document.createElement('img');
+                    img.src = path;
+                    img.alt = 'Favorite Image';
+                    img.loading = 'lazy';
+                    const a = document.createElement('a');
+                    a.href = "viewer.html?images=" + path.substring(path.lastIndexOf('/') + 1);
+                    a.appendChild(img);
+                    galleryContent.appendChild(a);
+                });
+            }
         }
     });
+
 </script>
 <style>
     body {
@@ -58,41 +116,47 @@
         font-family: Arial, sans-serif;
         overflow: hidden;
     }
+
+
     .rightbox {
         width: 80%;
         height: 100%;
         padding: 20px;
         overflow-y: auto;
     }
+
     .rightbox img {
         width: 180px;
         height: 120px;
         object-fit: contain;
         box-shadow: 0 2px 5px rgba(56, 56, 56, 0.05);
     }
+
     .selects1 {
         background-color: ghostwhite;
         border-radius: 80px;
     }
-    
+
     .leftbox {
         width: 20%;
         height: 100%;
         /*background-color: #d8f3ff;*/
-        padding:10px;
-        padding-top:50px;
+        padding: 10px;
+        padding-top: 50px;
     }
+
     .leftbox a {
         display: flex;
         align-items: center;
-        gap:10px;
-        font-size:18px;
-        padding:10px 20px;
+        gap: 10px;
+        font-size: 18px;
+        padding: 10px 20px;
         font-weight: 600;
-        color:#1e4f66;
+        color: #1e4f66;
         margin-top: 5px;
         text-decoration: none;
     }
+
     .gallery::before {
         content: ' ';
         display: block;
@@ -105,6 +169,7 @@
         box-sizing: border-box;
         border-radius: 4px;
     }
+
     .favorite::before {
         content: ' ';
         display: block;
@@ -112,22 +177,21 @@
         height: 20px;
         /*Star shape*/
         border: #1e4f66 10px solid;
-        clip-path: polygon(
-            50% 0%,
-            61.8% 35.1%,
-            98.0% 35.1%,
-            68.8% 57.0%,
-            79.4% 91.0%,
-            50% 70.0%,
-            20.6% 91.0%,
-            31.2% 57.0%,
-            2.0% 35.1%,
-            38.2% 35.1%
-        );
+        clip-path: polygon(50% 0%,
+                61.8% 35.1%,
+                98.0% 35.1%,
+                68.8% 57.0%,
+                79.4% 91.0%,
+                50% 70.0%,
+                20.6% 91.0%,
+                31.2% 57.0%,
+                2.0% 35.1%,
+                38.2% 35.1%);
         box-sizing: border-box;
         border-radius: 4px;
-        
+
     }
+
     .pc-top-nav {
         position: fixed;
         top: 0;
@@ -214,12 +278,13 @@
         flex-direction: row;
         background-color: #fdfdfd;
         height: calc(100vh - 120px);
-        overflow:hidden; 
+        overflow: hidden;
     }
 
     @media (max-width: 768px) {
         .pc-top-nav {
             height: 50px;
+            z-index: 1000;
         }
 
         .pc-top-nav-logo {
@@ -229,9 +294,29 @@
         .usericonbox span {
             display: none;
         }
-
+        .leftbox {
+            position:fixed;
+            bottom:0;
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            gap:5px;
+            width: calc(100% - 30px);
+            height: auto;
+            padding: 10px;
+        }
+        .leftbox a {
+            flex: 1;
+            text-align: center;
+        }
+        .rightbox {
+            width: 100%;
+            height: calc(100vh - 50px);
+            padding: 10px;
+        }
         .mainbox {
             flex-direction: column;
+            height:calc(100vh - 160px);
         }
     }
 </style>

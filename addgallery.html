@@ -1,292 +1,143 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Gallery Uploader (WebP + JSON merge)</title>
-<style>
-  body { font-family: system-ui, sans-serif; line-height: 1.6; padding: 1.2rem; max-width: 900px; margin: auto; }
-  fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
-  label { display: block; margin: .5rem 0 .25rem; font-weight: 600; }
-  input[type="text"] { width: 100%; padding: .5rem; }
-  #tagList { display: flex; flex-wrap: wrap; gap: .5rem; padding: .5rem 0; }
-  .tag { background: #eef; border: 1px solid #99c; padding: .25rem .5rem; border-radius: 999px; }
-  .tag button { margin-left: .4rem; }
-  #preview { max-width: 320px; display: block; margin-top: .5rem; border: 1px solid #ddd; }
-  .row { display: grid; grid-template-columns: 160px 1fr; gap: .75rem; align-items: start; }
-  .row > div { display: contents; }
-  .hint { color: #666; font-size: .9em; }
-  .error { color: #b00; }
-  #downloadLink { display: inline-block; margin-top: .75rem; }
-  textarea { width: 100%; height: 240px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-  .pill { display:inline-block; padding:.15rem .5rem; border:1px solid #ccc; border-radius:999px; font-size:.85em; }
-</style>
+  <meta charset="UTF-8">
+  <title>画像アップロードとWebP変換</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; }
+    input, button, textarea { margin: 5px 0; display: block; width: 100%; }
+    #tagDisplay span { display: inline-block; padding: 4px 8px; background: #eef; margin: 2px; border-radius: 4px; }
+    #downloadLink { margin-top: 10px; display: none; }
+  </style>
 </head>
 <body>
-<h1>ギャラリー登録（WebP変換 & JSON結合）</h1>
 
-<p class="hint">※ 同一オリジンの <code>/gallery.json</code> を読み込みます。CORS/パス設定をご確認ください。</p>
+  <h2>画像アップロードとWebP変換（1MB以下）</h2>
 
-<fieldset>
-  <legend>1. 既存ギャラリー読込</legend>
-  <div class="row">
-    <div>読み込み状態</div>
-    <div>
-      <span id="loadStatus" class="pill">未読込</span>
-      <button id="reloadBtn" type="button">再読込</button>
-      <div id="countInfo" class="hint"></div>
-      <div id="webpSupport" class="hint"></div>
-      <div id="loadError" class="error"></div>
-    </div>
-  </div>
-</fieldset>
+  <label>画像を選択：
+    <input type="file" id="imageInput" accept="image/*">
+  </label>
 
-<fieldset>
-  <legend>2. 入力</legend>
-  <div class="row">
-    <label for="imageInput">画像選択</label>
-    <div>
-      <input id="imageInput" type="file" accept="image/*" />
-      <img id="preview" alt="プレビュー" />
-    </div>
+  <label>ファイル名（英語のみ、小文字禁止、10文字以内）：
+    <input type="text" id="filenameInput" maxlength="10">
+  </label>
 
-    <label for="nameInput">ファイル名</label>
-    <div>
-      <input id="nameInput" type="text" placeholder="例: tenbodai" maxlength="10" />
-      <div class="hint">英小文字・数字・ハイフンのみ、空白不可、10文字以内</div>
-      <div id="nameError" class="error"></div>
-    </div>
+  <label>タグ入力（Enterで追加）：
+    <input type="text" id="tagInput" list="tagSuggestions">
+    <datalist id="tagSuggestions">
+      <option value="展望台">
+      <option value="自然">
+      <option value="建築物">
+      <option value="空">
+      <option value="都市">
+      <option value="山">
+    </datalist>
+  </label>
 
-    <label for="tagInput">タグ入力</label>
-    <div>
-      <input id="tagInput" type="text" placeholder="タグを入力して Enter" />
-      <div id="tagList"></div>
-      <div class="hint">Enterで確定。重複・空タグは無視。</div>
-    </div>
-  </div>
-</fieldset>
+  <div id="tagDisplay"></div>
 
-<fieldset>
-  <legend>3. 変換 & 出力</legend>
-  <div>
-    <button id="convertBtn" type="button">WebPに変換してダウンロード用リンク生成</button>
-    <a id="downloadLink" href="#" download style="display:none;">ダウンロード</a>
-    <div id="convError" class="error"></div>
-  </div>
+  <button id="convertButton">WebP変換＆ダウンロードリンク生成</button>
 
-  <h3>更新後 JSON</h3>
-  <textarea id="jsonOutput" readonly></textarea>
-</fieldset>
+  <a id="downloadLink" download>→ ダウンロードリンク</a>
 
-<script>
-(function(){
-  // ---- 状態 ----
-  let gallery = [];     // 既存JSON配列
-  let idSet = new Set();// 既存の数値ID（prefix）
-  let tags = [];        // 入力中タグ
-  let chosenFile = null;// 選択画像
-  let lastBlobUrl = null;
+  <textarea id="outputJson" rows="8" readonly></textarea>
 
-  // ---- DOM ----
-  const loadStatus = document.getElementById('loadStatus');
-  const reloadBtn = document.getElementById('reloadBtn');
-  const countInfo = document.getElementById('countInfo');
-  const loadError = document.getElementById('loadError');
-  const webpSupport = document.getElementById('webpSupport');
+  <script>
+    const tagInput = document.getElementById("tagInput");
+    const tagDisplay = document.getElementById("tagDisplay");
+    const tags = new Set();
 
-  const imageInput = document.getElementById('imageInput');
-  const preview = document.getElementById('preview');
-  const nameInput = document.getElementById('nameInput');
-  const nameError = document.getElementById('nameError');
-  const tagInput = document.getElementById('tagInput');
-  const tagList = document.getElementById('tagList');
-
-  const convertBtn = document.getElementById('convertBtn');
-  const downloadLink = document.getElementById('downloadLink');
-  const convError = document.getElementById('convError');
-  const jsonOutput = document.getElementById('jsonOutput');
-
-  // ---- ユーティリティ ----
-  const NAME_RE = /^[a-z0-9-]{1,10}$/; // 英小文字・数字・ハイフンのみ、1-10文字
-
-  function showTags() {
-    tagList.innerHTML = '';
-    tags.forEach((t, idx) => {
-      const span = document.createElement('span');
-      span.className = 'tag';
-      span.textContent = t;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.textContent = '×';
-      btn.addEventListener('click', () => { tags.splice(idx,1); showTags(); });
-      span.appendChild(btn);
-      tagList.appendChild(span);
-    });
-  }
-
-  function parseIdFromPath(p){
-    // /images/0001_name.webp の 0001 を抽出
-    const m = p.match(/\/images\/(\d{1,})_[^\/]*\.webp$/i);
-    return m ? parseInt(m[1], 10) : null;
-  }
-
-  function buildIdSet(){
-    idSet.clear();
-    gallery.forEach(item => {
-      const id = parseIdFromPath(item.path || '');
-      if (Number.isInteger(id)) idSet.add(id);
-    });
-  }
-
-  function genUniqueId(){
-    // 4桁〜6桁程度の乱数で衝突回避（存在チェック）
-    // 必要なら桁数や戦略を調整
-    let id;
-    let tries = 0;
-    do {
-      // 1000–999999
-      const min = 1000, max = 999999;
-      id = Math.floor(Math.random() * (max - min + 1)) + min;
-      tries++;
-      if (tries > 1000) throw new Error('ID生成に失敗しました（衝突過多）');
-    } while (idSet.has(id));
-    return id;
-  }
-
-  function isWebPSupported(){
-    const can = document.createElement('canvas');
-    if (!can.getContext) return false;
-    return can.toDataURL('image/webp').startsWith('data:image/webp');
-  }
-
-  // ---- 初期化 ----
-  async function loadGallery(){
-    loadError.textContent = '';
-    loadStatus.textContent = '読込中...';
-    try {
-      const res = await fetch('/gallery.json', { cache: 'no-cache' });
-      if (!res.ok) throw new Error('HTTP '+res.status);
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error('JSONは配列ではありません');
-      gallery = data;
-      buildIdSet();
-      loadStatus.textContent = '読込済み';
-      countInfo.textContent = `既存件数: ${gallery.length}件（IDユニーク: ${idSet.size}件）`;
-    } catch (e) {
-      loadStatus.textContent = '未読込';
-      loadError.textContent = 'gallery.jsonの読み込みに失敗しました: ' + e.message;
-      gallery = [];
-      idSet.clear();
-      countInfo.textContent = '';
-    }
-  }
-
-  // 起動時
-  loadGallery();
-  webpSupport.textContent = 'WebPサポート: ' + (isWebPSupported() ? 'あり' : '（未対応の可能性：古いSafari等）');
-
-  reloadBtn.addEventListener('click', loadGallery);
-
-  // ---- 入力ハンドラ ----
-  imageInput.addEventListener('change', async (e) => {
-    chosenFile = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-    preview.src = '';
-    if (chosenFile) {
-      const url = URL.createObjectURL(chosenFile);
-      preview.src = url;
-    }
-  });
-
-  nameInput.addEventListener('input', () => {
-    const val = nameInput.value.trim();
-    if (!NAME_RE.test(val)) {
-      nameError.textContent = '英小文字・数字・ハイフンのみ、1〜10文字で入力してください。';
-    } else {
-      nameError.textContent = '';
-    }
-  });
-
-  tagInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const val = tagInput.value.trim();
-      if (val && !tags.includes(val)) {
-        tags.push(val);
-        showTags();
+    tagInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const tag = tagInput.value.trim();
+        if (tag && !tags.has(tag)) {
+          tags.add(tag);
+          const span = document.createElement("span");
+          span.textContent = tag;
+          tagDisplay.appendChild(span);
+        }
+        tagInput.value = "";
       }
-      tagInput.value = '';
-    }
-  });
+    });
 
-  // ---- 変換＆出力 ----
-  convertBtn.addEventListener('click', async () => {
-    convError.textContent = '';
-    downloadLink.style.display = 'none';
-    jsonOutput.value = '';
+    let existingPaths = [];
 
-    // 検証
-    if (!chosenFile) {
-      convError.textContent = '画像ファイルを選択してください。';
-      return;
-    }
-    const base = nameInput.value.trim();
-    if (!NAME_RE.test(base)) {
-      convError.textContent = 'ファイル名が不正です。';
-      return;
-    }
-    if (tags.length === 0) {
-      convError.textContent = 'タグを1つ以上入力してください。';
-      return;
+    async function fetchGalleryJson() {
+      try {
+        const res = await fetch("gallery.json");
+        if (res.ok) {
+          const data = await res.json();
+          existingPaths = data.map(entry => entry.path.match(/\/images\/(\d+)_/)?.[1]).filter(Boolean);
+        }
+      } catch (e) {
+        console.warn("gallery.json の読み込みに失敗しました", e);
+      }
     }
 
-    // WebP変換（Canvas）
-    try {
-      const imgBitmap = await createImageBitmap(chosenFile);
-      const canvas = document.createElement('canvas');
-      canvas.width = imgBitmap.width;
-      canvas.height = imgBitmap.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(imgBitmap, 0, 0);
+    fetchGalleryJson();
 
-      // ブラウザがwebp未対応ならエラー化（必要ならpngにフォールバック可）
-      const type = 'image/webp';
-      const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(b => b ? resolve(b) : reject(new Error('WebPに変換できませんでした')), type, 0.9);
-      });
+    document.getElementById("convertButton").addEventListener("click", async () => {
+      const file = document.getElementById("imageInput").files[0];
+      const filename = document.getElementById("filenameInput").value.trim();
+      const downloadLink = document.getElementById("downloadLink");
+      const outputJson = document.getElementById("outputJson");
 
-      // 一意ID生成
-      const id = genUniqueId();
+      if (!file || !filename || tags.size === 0) {
+        alert("全項目を入力してください");
+        return;
+      }
 
-      // ファイル名 & パス
-      const filename = `${String(id).padStart(4,'0')}_${base}.webp`;
-      const path = `/images/${filename}`;
+      if (!/^[A-Z0-9-]+$/.test(filename)) {
+        alert("ファイル名は大文字英数字とハイフンのみです");
+        return;
+      }
 
-      // ダウンロードリンク
-      if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
-      lastBlobUrl = URL.createObjectURL(blob);
-      downloadLink.href = lastBlobUrl;
-      downloadLink.download = filename;
-      downloadLink.textContent = `ダウンロード（${filename}）`;
-      downloadLink.style.display = 'inline-block';
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      await img.decode();
 
-      // 新規エントリ
-      const newEntry = { path, tag: [...tags] };
+      // Resize: 最大幅1024pxに調整
+      const MAX_WIDTH = 1024;
+      const scale = Math.min(1, MAX_WIDTH / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
 
-      // JSON結合
-      const merged = [...gallery, newEntry];
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      // 整形出力
-      jsonOutput.value = JSON.stringify(merged, null, 2);
+      // WebPエンコード
+      let quality = 0.95;
+      let blob;
+      do {
+        blob = await new Promise(res => canvas.toBlob(res, "image/webp", quality));
+        quality -= 0.05;
+      } while (blob.size > 1024 * 1024 && quality > 0.5); // 1MB以下目標
 
-      // 以後の衝突回避のため、メモリ上の集合にも即時反映
-      idSet.add(id);
-      gallery = merged;
+      // 重複しないID生成
+      let newId;
+      do {
+        newId = Math.floor(1000 + Math.random() * 9000).toString();
+      } while (existingPaths.includes(newId));
 
-    } catch (err) {
-      convError.textContent = '変換でエラー: ' + err.message;
-    }
-  });
-})();
-</script>
+      const newPath = `/images/${newId}_${filename}.webp`;
+
+      // ダウンロードリンク生成
+      const blobUrl = URL.createObjectURL(blob);
+      downloadLink.href = blobUrl;
+      downloadLink.download = `${newId}_${filename}.webp`;
+      downloadLink.style.display = "inline";
+      downloadLink.textContent = `→ ${newId}_${filename}.webp をダウンロード`;
+
+      // JSON構造出力
+      const newEntry = {
+        path: newPath,
+        tag: [...tags]
+      };
+      outputJson.value = JSON.stringify(newEntry, null, 2);
+    });
+  </script>
+
 </body>
 </html>
