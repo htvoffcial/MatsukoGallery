@@ -136,7 +136,7 @@
 
         const data = await fetchGalleryData();
         const filtered = data.filter(item => {
-            const allTags = item.tags || item.tag || []; // tags がなければ tag を使う
+            const allTags = item.tags || item.tag || []; 
             return allTags.includes(tags);
         });
 

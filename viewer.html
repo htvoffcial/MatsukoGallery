@@ -124,7 +124,7 @@
                             const tags = item.tags || item.tag || [];
                             tags.forEach(tag => {
                                 const tagLink = document.createElement('a');
-                                tagLink.href = `?view=tagv&tags=${encodeURIComponent(tag)}`;
+                                tagLink.href = `https://photos.matsudo-h.com?view=tagv&tags=${encodeURIComponent(tag)}`;
                                 tagLink.textContent = tag;
                                 tagBox.appendChild(tagLink);
                             });
