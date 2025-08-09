@@ -166,7 +166,7 @@
                 const tags = item.tags || item.tag || [];
                 tags.forEach(tag => {
                     const tagLink = document.createElement('a');
-                    tagLink.href = 'https://photos.matsudo-h.com?tags='+tag;
+                    tagLink.href = 'https://photos.matsudo-h.com?view=tagv&tags='+tag;
                     tagLink.textContent = tag;
                     tagbox.appendChild(tagLink);
                 });
