@@ -35,333 +35,353 @@
     </div>
     <div class="info-panel" id="info-panel">
         <div class="info-panel-tum">
-        </div><h2>ファイル情報</h2>
+        </div>
+        <h2>ファイル情報</h2>
         <div class="filenamebox" id="filenamebox">
         </div>
         <h2>タグ</h2>
         <div class="tagbox" id="tagbox">
-        <!--</div><h2>著作権情報</h2><p>&copy; <span id="thisyear"></span> </p>-->
-    </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const imgElement = document.getElementById('image');
-            const favButton = document.getElementById('fav');
-            const urlParams = new URLSearchParams(window.location.search);
-            const imageName = urlParams.get('images');
-            const imgSrc = "/images/" + imageName;
+            <!--</div><h2>著作権情報</h2><p>&copy; <span id="thisyear"></span> </p>-->
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                // ==== 基本要素とURLパラメータ ====
+                const imgElement = document.getElementById('image');
+                const favButton = document.getElementById('fav');
+                const infoPanel = document.getElementById('info-panel');
+                const filenameBox = document.getElementById('filenamebox');
+                const tagBox = document.getElementById('tagbox');
+                const infoBtn = document.getElementById('pic-infobtn');
+                const imageName = new URLSearchParams(location.search).get('images');
+                const imgSrc = imageName ? `/images/${imageName}` : null;
 
-            function updateFavoriteIcon() {
-                const favorites = JSON.parse(localStorage.getItem('favorite') || '[]');
-                favButton.src = favorites.includes(imgSrc)
-                    ? '/assets/003_photostared.png'
-                    : '/assets/002_photostar.png';
-            }
+                // ==== お気に入り管理 ====
+                function getFavorites() {
+                    return JSON.parse(localStorage.getItem('favorite') || '[]');
+                }
+                function updateFavoriteIcon() {
+                    const favorites = getFavorites();
+                    favButton.src = favorites.includes(imgSrc)
+                        ? '/assets/003_photostared.png'
+                        : '/assets/002_photostar.png';
+                }
+                function toggleFavorite() {
+                    let favorites = getFavorites();
+                    if (favorites.includes(imgSrc)) {
+                        favorites = favorites.filter(fav => fav !== imgSrc);
+                    } else {
+                        favorites.push(imgSrc);
+                    }
+                    localStorage.setItem('favorite', JSON.stringify(favorites));
+                    updateFavoriteIcon();
+                }
 
-            function loadImage() {
-                if (imageName) {
+                // ==== 画像読み込み ====
+                function loadImage() {
+                    if (!imgSrc) {
+                        document.body.innerHTML = '<p>画像が指定されていません。</p>';
+                        return;
+                    }
                     imgElement.src = imgSrc;
                     imgElement.onload = () => imgElement.classList.add('loaded');
                     updateFavoriteIcon();
-                } else {
-                    document.body.innerHTML = '<p>画像が指定されていません。</p>';
                 }
-            }
 
-            favButton.addEventListener('click', () => {
-                let favorites = JSON.parse(localStorage.getItem('favorite') || '[]');
-                if (favorites.includes(imgSrc)) {
-                    favorites = favorites.filter(fav => fav !== imgSrc);
-                } else {
-                    favorites.push(imgSrc);
-                }
-                localStorage.setItem('favorite', JSON.stringify(favorites));
-                updateFavoriteIcon();
-            });
-
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape') {
-                    history.back();
-                }
-            });
-
-            document.addEventListener('touchstart', (event) => {
-                if (event.touches.length !== 1) return;
-
-                const startY = event.touches[0].clientY;
-                let isPullingDown = false;
-                let isPullingUp = false;
-
-                const onMove = (event) => {
-                    if (event.touches[0].clientY > startY + 50) {
-                        isPullingDown = true;
-                    }else if(event.touches[0].clientY < startY - 50){
-                        isPullingUp = true;
+                // ==== infoパネル管理 ====
+                function toggleInfoPanel(forceExpand) {
+                    if (forceExpand === true) {
+                        infoPanel.setAttribute('expand', '');
+                        infoPanel.removeAttribute('collapse');
+                        return;
                     }
-                };
+                    if (forceExpand === false) {
+                        infoPanel.setAttribute('collapse', '');
+                        infoPanel.removeAttribute('expand');
+                        return;
+                    }
+                    const isExpanded = infoPanel.hasAttribute('expand');
+                    infoPanel.toggleAttribute('expand', !isExpanded);
+                    infoPanel.toggleAttribute('collapse', isExpanded);
+                }
 
-                const onEnd = () => {
-                    if (isPullingDown) {
-                        if(document.getElementById('info-panel').hasAttribute('expand')){
-                            toggleInfoPanel();
-                        } else {
-                        history.back();
+                // ==== 情報読み込み ====
+                async function loadImageInfo() {
+                    try {
+                        const response = await fetch('gallery.json');
+                        const data = await response.json();
+                        const item = data.find(entry =>
+                            entry.path === imgSrc || entry.filename === imageName
+                        );
+                        filenameBox.innerHTML = '';
+                        tagBox.innerHTML = '';
+
+                        if (item) {
+                            const filename = document.createElement('div');
+                            filename.className = 'filename';
+                            filename.textContent = item.filename || imageName;
+                            filenameBox.appendChild(filename);
+
+                            const tags = item.tags || item.tag || [];
+                            tags.forEach(tag => {
+                                const tagLink = document.createElement('a');
+                                tagLink.href = `?view=tagv&tags=${encodeURIComponent(tag)}`;
+                                tagLink.textContent = tag;
+                                tagBox.appendChild(tagLink);
+                            });
                         }
-                    } 
-                    if (isPullingUp) {
-                        toggleInfoPanel();
+                    } catch (e) {
+                        console.error('画像情報読み込みエラー:', e);
                     }
-                    document.removeEventListener('touchmove', onMove);
-                    document.removeEventListener('touchend', onEnd);
-                };
+                }
 
-                document.addEventListener('touchmove', onMove);
-                document.addEventListener('touchend', onEnd);
-            });
+                // ==== 操作イベント ====
+                favButton.addEventListener('click', toggleFavorite);
+                infoBtn.addEventListener('click', () => toggleInfoPanel());
+                imgElement.addEventListener('click', () => toggleInfoPanel(false));
 
-            loadImage();
-        });
-        //info-panel展開
-        const infoPanel = document.getElementById('info-panel');
-        const picinfobtn = document.getElementById('pic-infobtn');
-        picinfobtn.addEventListener('click', () => {
-            toggleInfoPanel();
-        });
-        function toggleInfoPanel() {
-            infoPanel.toggleAttribute('expand');
-           if(infoPanel.hasAttribute('expand')){
-               infoPanel.removeAttribute("collapse");
-           } else {
-               infoPanel.setAttribute("collapse","");
-               infoPanel.style.display = "flex";
-           }
-        }
-
-        const imbox = document.getElementById('image');
-        imbox.addEventListener('click', () => {
-            if(infoPanel.hasAttribute('expand')){
-                infoPanel.setAttribute("collapse","");
-                infoPanel.style.display = "flex";
-            } else {
-                infoPanel.removeAttribute("collapse");
-            }
-        });
-    fetch('gallery.json')
-        .then(response => response.json())
-        .then(data => {
-            const filenamebox = document.getElementById('filenamebox');
-            const tagbox = document.getElementById('tagbox');
-            const urlParams = new URLSearchParams(window.location.search);
-            const imageName = urlParams.get('images');
-            const imgPath = "/images/" + imageName;
-            const item = data.find(entry => entry.path === imgPath || entry.filename === imageName);
-            filenamebox.innerHTML = '';
-            tagbox.innerHTML = '';
-
-            if (item) {
-                const filename = document.createElement('div');
-                filename.className = 'filename';
-                filename.textContent = item.filename || imageName;
-                filenamebox.appendChild(filename);
-
-                const tags = item.tags || item.tag || [];
-                tags.forEach(tag => {
-                    const tagLink = document.createElement('a');
-                    tagLink.href = 'https://photos.matsudo-h.com?view=tagv&tags='+tag;
-                    tagLink.textContent = tag;
-                    tagbox.appendChild(tagLink);
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') history.back();
                 });
+
+                // スワイプ操作
+                document.addEventListener('touchstart', (e) => {
+                    if (e.touches.length !== 1) return;
+                    const startY = e.touches[0].clientY;
+                    let isPullingDown = false, isPullingUp = false;
+
+                    const onMove = (e) => {
+                        const diffY = e.touches[0].clientY - startY;
+                        isPullingDown = diffY > 50;
+                        isPullingUp = diffY < -50;
+                    };
+                    const onEnd = () => {
+                        if (isPullingDown) {
+                            if (infoPanel.hasAttribute('expand')) {
+                                toggleInfoPanel(false);
+                            } else {
+                                history.back();
+                            }
+                        }
+                        if (isPullingUp) toggleInfoPanel(true);
+                        document.removeEventListener('touchmove', onMove);
+                        document.removeEventListener('touchend', onEnd);
+                    };
+
+                    document.addEventListener('touchmove', onMove);
+                    document.addEventListener('touchend', onEnd);
+                });
+
+                // ==== 実行 ====
+                loadImage();
+                loadImageInfo();
+            });
+        </script>
+
+        <style>
+            .info-panel h2 {
+                color: #556;
+                margin: 5px;
+                margin-left: 0px;
+                font-size: 16px;
+                font-weight: 700;
             }
-        });
-    </script>
-    <style>
-        .info-panel h2{
-            color:#556;
-            margin:5px;
-            margin-left:0px;
-            font-size: 16px;
-            font-weight: 700;
-        }
-        .tagbox{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
-        .tagbox>a{
-            display: flex;
-            align-items: center;
-            padding: 6px 7px;
-            border: 1px solid gainsboro;
-            border-radius: 80px;
-            text-decoration: none;
-            color: #444;
-            font-size: 14px;
-            font-weight:bold;
-            line-height: 1.5;
-        }
-        .tagbox>a::before{
-            content: "#";
-        }
 
-        .filenamebox{
-            display:block;
-            width:100%;
-            text-align: left;
-            margin: 5px auto;
-            background-color: rgba(241, 241, 241, 0.253);
-            padding: 20px;
-            border-radius: 5px;
-            color:#666;
-            font-weight: bold;
-        }
-        .info-panel{
-            position: fixed;
-            bottom: 0;
-            width:calc(100% - 50px);
-            background:ghostwhite;
-            border-radius:20px 20px 0px 0px;
-            padding:20px;
-            left:5px;
-            z-index: 1000;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 -2px 5px rgba(226, 226, 226, 0.692);
-            display:none;
-        }
-        .info-panel[expand]{
-            display:flex;
-            animation: info-panel-expand 0.16s ease-in-out forwards;
-        }
-        .info-panel[collapse] {
-            display:flex;
-            animation: info-panel-collapse 0.16s ease forwards;
-        }
-        @keyframes info-panel-expand {
-            from {
-                height: 0px;
+            .tagbox {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
             }
-            to {
-                height: 320px;
+
+            .tagbox>a {
+                display: flex;
+                align-items: center;
+                padding: 6px 7px;
+                border: 1px solid gainsboro;
+                border-radius: 80px;
+                text-decoration: none;
+                color: #444;
+                font-size: 14px;
+                font-weight: bold;
+                line-height: 1.5;
             }
-        }
-        @keyframes info-panel-collapse{
-             from {
-                height: 320px;
+
+            .tagbox>a::before {
+                content: "#";
             }
-            to {
-                height: 0px;
-                visibility: collapse;
+
+            .filenamebox {
+                display: block;
+                width: 100%;
+                text-align: left;
+                margin: 5px auto;
+                background-color: rgba(241, 241, 241, 0.253);
+                padding: 20px;
+                border-radius: 5px;
+                color: #666;
+                font-weight: bold;
             }
-        }
-        .info-panel-tum{
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .info-panel-tum::after{
-            content:" ";
-            height: 5px;
-            width:40px;
-            background:gainsboro;
-            border-radius: 5px;
-            margin-top:-10px;
-        }
-        #fav {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 30px;
-            height: 30px;
-            cursor: pointer;
-        }
-        #pic-infobtn {
-            position: absolute;
-            top: 12px;
-            right: 50px;
-            width: 27px;
-            height: 27px;
-            cursor: pointer;
-            filter: grayscale(1) brightness(0.6);
-        }
 
-        .imgbox img {
-            /*読み込み時ふわっと*/
-            transition: opacity 0.1s ease-in;
-            opacity: 0.2;
-        }
+            .info-panel {
+                position: fixed;
+                bottom: 0;
+                width: calc(100% - 50px);
+                background: ghostwhite;
+                border-radius: 20px 20px 0px 0px;
+                padding: 20px;
+                left: 5px;
+                z-index: 1000;
+                flex-direction: column;
+                overflow: hidden;
+                box-shadow: 0 -2px 5px rgba(226, 226, 226, 0.692);
+                display: none;
+            }
 
-        .imgbox img.loaded {
-            opacity: 1;
-        }
+            .info-panel[expand] {
+                display: flex;
+                animation: info-panel-expand 0.16s ease-in-out forwards;
+            }
 
-        .imgbox {
-            display: block;
-            height: calc(100vh - 20px);
-            margin: 0 auto;
-            text-align: center;
-        }
+            .info-panel[collapse] {
+                display: flex;
+                animation: info-panel-collapse 0.16s ease forwards;
+            }
 
-        .pc-top-nav {
-            position: fixed;
-            width: 100%;
-            height: 50px;
-            background-color: #f5f5f5;
-            display: flex;
-            align-items: center;
-            opacity: 0.8;
-            transition: opacity 0.3s ease;
-            z-index: 1000;
-        }
+            @keyframes info-panel-expand {
+                from {
+                    height: 0px;
+                }
 
-        .pc-top-nav-r {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-        }
+                to {
+                    height: 320px;
+                }
+            }
 
-        .pc-top-nav a {
-            opacity: 0.8;
-        }
+            @keyframes info-panel-collapse {
+                from {
+                    height: 320px;
+                }
 
-        .pc-top-nav:hover {
-            opacity: 1;
-        }
+                to {
+                    height: 0px;
+                    visibility: collapse;
+                }
+            }
 
-        /*backbtn左向き矢印アウトラインアイコンをafterで再現*/
-        .backbtn {
-            width: 30px;
-            height: 30px;
-            border: none;
-            cursor: pointer;
-            display: relative;
-        }
-
-        .backbtn::before {
-            content: '';
-            position: absolute;
-            left: 70px;
-            top: 50%;
-            width: 16px;
-            height: 16px;
-            border: 3px solid #333;
-            border-right: none;
-            border-top: none;
-            border-radius: 2px;
-            transform: translate(-50%, -50%) rotate(45deg);
-        }
-        @media (max-width: 768px) {
-            .imgbox{
-                height: calc(100vh - 50px);
+            .info-panel-tum {
                 display: flex;
                 align-items: center;
                 justify-content: center;
             }
-            .backbtn::before {
-                left: 30px;
-                width: 15px;
-                height: 15px;
+
+            .info-panel-tum::after {
+                content: " ";
+                height: 5px;
+                width: 40px;
+                background: gainsboro;
+                border-radius: 5px;
+                margin-top: -10px;
             }
-        }
-    </style>
+
+            #fav {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                width: 30px;
+                height: 30px;
+                cursor: pointer;
+            }
+
+            #pic-infobtn {
+                position: absolute;
+                top: 12px;
+                right: 50px;
+                width: 27px;
+                height: 27px;
+                cursor: pointer;
+                filter: grayscale(1) brightness(0.6);
+            }
+
+            .imgbox img {
+                /*読み込み時ふわっと*/
+                transition: opacity 0.1s ease-in;
+                opacity: 0.2;
+            }
+
+            .imgbox img.loaded {
+                opacity: 1;
+            }
+
+            .imgbox {
+                display: block;
+                height: calc(100vh - 20px);
+                margin: 0 auto;
+                text-align: center;
+            }
+
+            .pc-top-nav {
+                position: fixed;
+                width: 100%;
+                height: 50px;
+                background-color: #f5f5f5;
+                display: flex;
+                align-items: center;
+                opacity: 0.8;
+                transition: opacity 0.3s ease;
+                z-index: 1000;
+            }
+
+            .pc-top-nav-r {
+                margin-left: auto;
+                display: flex;
+                align-items: center;
+            }
+
+            .pc-top-nav a {
+                opacity: 0.8;
+            }
+
+            .pc-top-nav:hover {
+                opacity: 1;
+            }
+
+            /*backbtn左向き矢印アウトラインアイコンをafterで再現*/
+            .backbtn {
+                width: 30px;
+                height: 30px;
+                border: none;
+                cursor: pointer;
+                display: relative;
+            }
+
+            .backbtn::before {
+                content: '';
+                position: absolute;
+                left: 70px;
+                top: 50%;
+                width: 16px;
+                height: 16px;
+                border: 3px solid #333;
+                border-right: none;
+                border-top: none;
+                border-radius: 2px;
+                transform: translate(-50%, -50%) rotate(45deg);
+            }
+
+            @media (max-width: 768px) {
+                .imgbox {
+                    height: calc(100vh - 50px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .backbtn::before {
+                    left: 30px;
+                    width: 15px;
+                    height: 15px;
+                }
+            }
+        </style>
 </body>
 
 </html>
