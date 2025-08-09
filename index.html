@@ -135,7 +135,15 @@
         if (!tags) return;
 
         const data = await fetchGalleryData();
-        const filtered = data.filter(item => item.tags && item.tags.includes(tags));
+        const filtered = data.filter(item => {
+            const allTags = item.tags || item.tag || []; // tags がなければ tag を使う
+            return allTags.includes(tags);
+        });
+
+        if (filtered.length === 0) {
+            galleryContent.innerHTML = '<p>該当する画像はありません。</p>';
+            return;
+        }
 
         const fragment = document.createDocumentFragment();
         filtered.forEach(item => {
@@ -143,6 +151,7 @@
         });
         galleryContent.appendChild(fragment);
     }
+
 
     document.addEventListener('DOMContentLoaded', async () => {
         const galleryLink = document.getElementById('gallery');
