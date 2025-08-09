@@ -5,7 +5,7 @@
       "屋外",
       "校舎"
     ],
-    "copyrigths":"413r"
+    "copyrigths": "413r"
   },
   {
     "path": "/images/5897_CHURIN1.webp",
@@ -13,7 +13,7 @@
       "屋外",
       "駐輪所"
     ],
-    "copyrigths":"413r"
+    "copyrigths": "413r"
   },
   {
     "path": "/images/4727_TENMONDAI1.webp",
@@ -24,7 +24,7 @@
       "校舎",
       "空"
     ],
-    "copyrigths":"413r"
+    "copyrigths": "413r"
   },
   {
     "path": "/images/9539_SORAMOYOU1.webp",
@@ -35,6 +35,17 @@
       "空",
       "スカイツリー向き"
     ],
-    "copyrigths":"413r"
+    "copyrigths": "413r"
+  },
+  {
+    "path": "/images/7880_COMPROOM.webp",
+    "filename": "7880_COMPROOM.webp",
+    "tags": [
+      "コンピューター室",
+      "屋内",
+      "部室",
+      "パソコン"
+    ],
+    "copyrigths": "413r"
   }
 ]
