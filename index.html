@@ -135,6 +135,22 @@
                     galleryContent.appendChild(a);
                 });
             }
+        }else if(view === 'tags'){
+            const tagPaths = JSON.parse(localStorage.getItem('tags') || '[]');
+            if (tagPaths.length === 0) {
+                galleryContent.innerHTML = '<p>タグはまだありません。</p>';
+            } else {
+                tagPaths.forEach(path => {
+                    const img = document.createElement('img');
+                    img.src = path;
+                    img.alt = 'Tag Image';
+                    img.loading = 'lazy';
+                    const a = document.createElement('a');
+                    a.href = "viewer.html?images=" + path.substring(path.lastIndexOf('/') + 1);
+                    a.appendChild(img);
+                    galleryContent.appendChild(a);
+                });
+            }
         }
     });
 

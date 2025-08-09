@@ -9,6 +9,7 @@
             font-family: Arial, sans-serif;
             overflow: hidden;
             margin: 0;
+            overscroll-behavior-y: none;
             padding: 0;
         }
     </style>
@@ -20,15 +21,27 @@
             <div class="backbtn"></div>
         </a>
         <div class="pc-top-nav-r">
+            <a href="javascript:void(0)">
+                <img alt="Info" id="pic-infobtn" load="lazy" src="/assets/005_infoicon.webp">
+            </a>
             <a href="javascript:void(0);">
                 <img alt="Favorite" id="fav" load="lazy" src="/assets/002_photostar.png">
             </a>
         </div>
+
     </div>
     <div class="imgbox">
         <img id="image" src="" alt="Gallery Image" style="max-width: 100%; max-height: 100%;">
     </div>
-
+    <div class="info-panel" id="info-panel">
+        <div class="info-panel-tum">
+        </div><h2>ファイル情報</h2>
+        <div class="filenamebox" id="filenamebox">
+        </div>
+        <h2>タグ</h2>
+        <div class="tagbox" id="tagbox">
+        <!--</div><h2>著作権情報</h2><p>&copy; <span id="thisyear"></span> </p>-->
+    </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const imgElement = document.getElementById('image');
@@ -76,15 +89,27 @@
 
                 const startY = event.touches[0].clientY;
                 let isPullingDown = false;
+                let isPullingUp = false;
 
                 const onMove = (event) => {
                     if (event.touches[0].clientY > startY + 50) {
                         isPullingDown = true;
+                    }else if(event.touches[0].clientY < startY - 50){
+                        isPullingUp = true;
                     }
                 };
 
                 const onEnd = () => {
-                    if (isPullingDown) history.back();
+                    if (isPullingDown) {
+                        if(document.getElementById('info-panel').hasAttribute('expand')){
+                            toggleInfoPanel();
+                        } else {
+                        history.back();
+                        }
+                    } 
+                    if (isPullingUp) {
+                        toggleInfoPanel();
+                    }
                     document.removeEventListener('touchmove', onMove);
                     document.removeEventListener('touchend', onEnd);
                 };
@@ -95,9 +120,151 @@
 
             loadImage();
         });
+        //info-panel展開
+        const infoPanel = document.getElementById('info-panel');
+        const picinfobtn = document.getElementById('pic-infobtn');
+        picinfobtn.addEventListener('click', () => {
+            toggleInfoPanel();
+        });
+        function toggleInfoPanel() {
+            infoPanel.toggleAttribute('expand');
+           if(infoPanel.hasAttribute('expand')){
+               infoPanel.removeAttribute("collapse");
+           } else {
+               infoPanel.setAttribute("collapse","");
+               infoPanel.style.display = "flex";
+           }
+        }
 
+        const imbox = document.getElementById('image');
+        imbox.addEventListener('click', () => {
+            if(infoPanel.hasAttribute('expand')){
+                infoPanel.setAttribute("collapse","");
+                infoPanel.style.display = "flex";
+            } else {
+                infoPanel.removeAttribute("collapse");
+            }
+        });
+    fetch('gallery.json')
+        .then(response => response.json())
+        .then(data => {
+            const filenamebox = document.getElementById('filenamebox');
+            const tagbox = document.getElementById('tagbox');
+            const urlParams = new URLSearchParams(window.location.search);
+            const imageName = urlParams.get('images');
+            const imgPath = "/images/" + imageName;
+            const item = data.find(entry => entry.path === imgPath || entry.filename === imageName);
+            filenamebox.innerHTML = '';
+            tagbox.innerHTML = '';
+
+            if (item) {
+                const filename = document.createElement('div');
+                filename.className = 'filename';
+                filename.textContent = item.filename || imageName;
+                filenamebox.appendChild(filename);
+
+                const tags = item.tags || item.tag || [];
+                tags.forEach(tag => {
+                    const tagLink = document.createElement('a');
+                    tagLink.href = 'https://photos.matsudo-h.com?tags='+tag;
+                    tagLink.textContent = tag;
+                    tagbox.appendChild(tagLink);
+                });
+            }
+        });
     </script>
     <style>
+        .info-panel h2{
+            color:#556;
+            margin:5px;
+            margin-left:0px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .tagbox{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .tagbox>a{
+            display: flex;
+            align-items: center;
+            padding: 6px 7px;
+            border: 1px solid gainsboro;
+            border-radius: 80px;
+            text-decoration: none;
+            color: #444;
+            font-size: 14px;
+            font-weight:bold;
+            line-height: 1.5;
+        }
+        .tagbox>a::before{
+            content: "#";
+        }
+
+        .filenamebox{
+            display:block;
+            width:100%;
+            text-align: left;
+            margin: 5px auto;
+            background-color: rgba(241, 241, 241, 0.253);
+            padding: 20px;
+            border-radius: 5px;
+            color:#666;
+            font-weight: bold;
+        }
+        .info-panel{
+            position: fixed;
+            bottom: 0;
+            width:calc(100% - 50px);
+            background:ghostwhite;
+            border-radius:20px 20px 0px 0px;
+            padding:20px;
+            left:5px;
+            z-index: 1000;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 -2px 5px rgba(226, 226, 226, 0.692);
+            display:none;
+        }
+        .info-panel[expand]{
+            display:flex;
+            animation: info-panel-expand 0.16s ease-in-out forwards;
+        }
+        .info-panel[collapse] {
+            display:flex;
+            animation: info-panel-collapse 0.16s ease forwards;
+        }
+        @keyframes info-panel-expand {
+            from {
+                height: 0px;
+            }
+            to {
+                height: 320px;
+            }
+        }
+        @keyframes info-panel-collapse{
+             from {
+                height: 320px;
+            }
+            to {
+                height: 0px;
+                visibility: collapse;
+            }
+        }
+        .info-panel-tum{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .info-panel-tum::after{
+            content:" ";
+            height: 5px;
+            width:40px;
+            background:gainsboro;
+            border-radius: 5px;
+            margin-top:-10px;
+        }
         #fav {
             position: absolute;
             top: 10px;
@@ -105,6 +272,15 @@
             width: 30px;
             height: 30px;
             cursor: pointer;
+        }
+        #pic-infobtn {
+            position: absolute;
+            top: 12px;
+            right: 50px;
+            width: 27px;
+            height: 27px;
+            cursor: pointer;
+            filter: grayscale(1) brightness(0.6);
         }
 
         .imgbox img {
@@ -119,7 +295,7 @@
 
         .imgbox {
             display: block;
-            height: calc(100vh - 50px);
+            height: calc(100vh - 20px);
             margin: 0 auto;
             text-align: center;
         }

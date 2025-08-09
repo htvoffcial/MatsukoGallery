@@ -4,14 +4,16 @@
     "tag": [
       "屋外",
       "校舎"
-    ]
+    ],
+    "copyrigths":"413r"
   },
   {
     "path": "/images/5897_CHURIN1.webp",
     "tag": [
       "屋外",
       "駐輪所"
-    ]
+    ],
+    "copyrigths":"413r"
   },
   {
     "path": "/images/4727_TENMONDAI1.webp",
@@ -21,7 +23,7 @@
       "渡り廊下",
       "校舎",
       "空"
-    ]
+    ],"copyrigths":"413r"
   },
   {
     "path": "/images/9539_SORAMOYOU1.webp",
@@ -31,6 +33,7 @@
       "屋外",
       "空",
       "スカイツリー向き"
-    ]
+    ],
+    "copyrigths":"413r"
   }
 ]
